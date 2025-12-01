@@ -102,14 +102,36 @@ let distance = p1.manhattan_distance(&p2);
 
 ## Adding New Days
 
+This project uses [aoc-cli-v2](https://github.com/TomPlanche/aoc-cli-v2), a custom CLI tool for managing Advent of Code solutions.
+
+### Installation
+
 ```bash
-# From workspace root
-aoc-cli add <day>
+cargo install --git https://github.com/TomPlanche/aoc-cli-v2
 ```
+
+### Usage
+
+```bash
+# Add a new day solution template
+aoc-cli add <day>
+
+# Download input for a specific day
+aoc-cli download <day>
+
+# Submit an answer
+aoc-cli submit <day> <part> <answer>
+```
+
+The tool automatically:
+- Creates the day folder structure
+- Sets up the solution template with the Solution trait
+- Downloads your personalized input from adventofcode.com
+- Submits answers directly from the command line
 
 ## Progress
 
-- [ ] Day 1
+- [x] Day 1
 - [ ] Day 2
 - [ ] Day 3
 - [ ] Day 4
