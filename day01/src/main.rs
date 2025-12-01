@@ -44,8 +44,29 @@ impl Solution for Day01 {
         count
     }
 
-    fn part2(&self, _data: &Self::Input) -> Self::Output {
-        0
+    fn part2(&self, data: &Self::Input) -> Self::Output {
+        let mut position = 50;
+        let mut count = 0;
+
+        for &(direction, distance) in data {
+            match direction {
+                'L' => {
+                    if position > 0 {
+                        count += (distance + 100 - position) / 100;
+                    } else {
+                        count += distance / 100;
+                    }
+                    position = (position - distance).rem_euclid(100);
+                }
+                'R' => {
+                    count += (position + distance) / 100;
+                    position = (position + distance) % 100;
+                }
+                _ => {}
+            }
+        }
+
+        count
     }
 }
 
