@@ -94,10 +94,10 @@ impl Solution for Day02 {
             if lower_k != 0 {
                 let k_str = lower_k.to_string();
                 let s = k_str.repeat(2);
-                if let Ok(n) = s.parse::<i64>() {
-                    if n > max_val {
-                        break;
-                    }
+                if let Ok(n) = s.parse::<i64>()
+                    && n > max_val
+                {
+                    break;
                 }
             }
 
