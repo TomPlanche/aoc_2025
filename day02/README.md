@@ -69,26 +69,22 @@ What do you get if you add up all of the invalid IDs using these new rules?
 
 ## Solution Approach
 
-### Part 1
 
-[Describe your approach to solving part 1]
+### Part 1: Two-Part Repetitions
 
-### Part 2
+This solution identifies and sums "invalid IDs" from a list of ranges. An invalid ID is a number composed of a repeating sequence of digits.
 
-[Describe your approach to solving part 2]
+Part 1 finds numbers where a sequence of digits is repeated exactly **twice**.
 
-## Running
+-   Example: `1212` (from pattern `12`), `345345` (from pattern `345`).
 
-```bash
-cargo run
-```
+#### Logic
 
-## Testing
+The implementation uses a mathematical trick to generate these numbers efficiently:
+`invalid_num = k * (10^d + 1)`
 
-```bash
-cargo test
-```
-
-## Notes
-
-[Add any additional notes, observations, or learnings from this challenge]
+-   `d` is the number of digits in a pattern `k`.
+-   If you have a `d`-digit number `k`, multiplying it by `10^d` shifts it `d` places to the left (e.g., `12 * 100 = 1200`).
+-   Adding `k` to that result (`k * 10^d + k`) is equivalent to concatenating the number's string representation with itself.
+    -   **Example (`k=12`, `d=2`):** `12 * (10^2 + 1) = 12 * 101 = 1212`.
+    -   **Example (`k=345`, `d=3`):** `345 * (10^3 + 1) = 345 * 1001 = 345345`.

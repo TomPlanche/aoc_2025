@@ -1,26 +1,32 @@
+use std::collections::BTreeSet;
 use utils::{Solution, run_solution};
 
 struct Day02;
 
-fn is_invalid_id(num: i64) -> bool {
-    let s = num.to_string();
+impl Day02 {
+    /// Helper function to check if a number falls within any range and add it to the sum.
+    /// Returns true if the number was added (i.e., it was in a range and not seen before).
+    fn try_add_invalid_num(
+        invalid_num: i64,
+        data: &[(i64, i64)],
+        seen: &mut BTreeSet<i64>,
+        sum: &mut i64,
+    ) -> bool {
+        // Skip if already seen to avoid double-counting.
+        if seen.contains(&invalid_num) {
+            return false;
+        }
 
-    // Must have even length to be split in half
-    if !s.len().is_multiple_of(2) {
-        return false;
+        // Check if the number falls within any of the given ranges.
+        for &(start, end) in data {
+            if invalid_num >= start && invalid_num <= end {
+                *sum += invalid_num;
+                seen.insert(invalid_num);
+                return true;
+            }
+        }
+        false
     }
-
-    // Check for leading zero (which would make it invalid as a number representation)
-    if s.starts_with('0') {
-        return false;
-    }
-
-    // Split in half and check if both halves are identical
-    let mid = s.len() / 2;
-    let first_half = &s[..mid];
-    let second_half = &s[mid..];
-
-    first_half == second_half
 }
 
 fn is_invalid_id_part2(num: i64) -> bool {
@@ -74,16 +80,36 @@ impl Solution for Day02 {
     }
 
     fn part1(&self, data: &Self::Input) -> Self::Output {
-        let mut sum = 0;
-
-        for &(start, end) in data {
-            for num in start..=end {
-                if is_invalid_id(num) {
-                    sum += num;
-                }
-            }
+        if data.is_empty() {
+            return 0;
         }
 
+        let max_val = data.iter().map(|r| r.1).max().unwrap();
+        let mut sum = 0;
+        let mut seen = BTreeSet::new();
+
+        'd_loop: for d in 1..=9 {
+            let power_of_10_d = 10_i64.pow(d);
+            let multiplier = power_of_10_d + 1;
+            let lower_k = 10_i64.pow(d - 1);
+
+            // Early termination: smallest possible number already exceeds max_val.
+            if lower_k > max_val / multiplier {
+                break 'd_loop;
+            }
+
+            let upper_k = power_of_10_d;
+
+            for k in lower_k..upper_k {
+                let invalid_num = k * multiplier;
+
+                if invalid_num > max_val {
+                    break;
+                }
+
+                Self::try_add_invalid_num(invalid_num, data, &mut seen, &mut sum);
+            }
+        }
         sum
     }
 
@@ -124,16 +150,12 @@ mod tests {
 
     #[test]
     fn test_is_invalid_id() {
-        assert!(is_invalid_id(11));
-        assert!(is_invalid_id(22));
-        assert!(is_invalid_id(99));
-        assert!(is_invalid_id(1010));
-        assert!(is_invalid_id(6464));
-        assert!(is_invalid_id(123_123));
-
-        assert!(!is_invalid_id(12));
-        assert!(!is_invalid_id(101));
-        assert!(!is_invalid_id(100));
+        let day = Day02;
+        assert_eq!(day.part1(&day.parse_input("11-11")), 11);
+        assert_eq!(day.part1(&day.parse_input("6464-6464")), 6464);
+        assert_eq!(day.part1(&day.parse_input("123123-123123")), 123_123);
+        assert_eq!(day.part1(&day.parse_input("12-12")), 0);
+        assert_eq!(day.part1(&day.parse_input("101-101")), 0);
     }
 
     #[test]
