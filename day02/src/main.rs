@@ -4,32 +4,6 @@ use utils::{Solution, run_solution};
 
 struct Day02;
 
-impl Day02 {
-    /// Helper function to check if a number falls within any range and add it to the sum.
-    /// Returns true if the number was added (i.e., it was in a range and not seen before).
-    fn try_add_invalid_num(
-        invalid_num: i64,
-        data: &[(i64, i64)],
-        seen: &mut BTreeSet<i64>,
-        sum: &mut i64,
-    ) -> bool {
-        // Skip if already seen to avoid double-counting.
-        if seen.contains(&invalid_num) {
-            return false;
-        }
-
-        // Check if the number falls within any of the given ranges.
-        for &(start, end) in data {
-            if invalid_num >= start && invalid_num <= end {
-                *sum += invalid_num;
-                seen.insert(invalid_num);
-                return true;
-            }
-        }
-        false
-    }
-}
-
 impl Solution for Day02 {
     type Input = Vec<(i64, i64)>;
     type Output = i64;
@@ -110,48 +84,68 @@ impl Solution for Day02 {
         }
 
         let max_val = data.iter().map(|r| r.1).max().unwrap();
-        let mut sum = 0;
-        let mut seen = BTreeSet::new();
+        let mut all_valid_nums = Vec::new();
 
-        'd_loop: for d in 1..=18 {
+        for d in 1..=18 {
             let lower_k = if d == 1 { 1 } else { 10_i64.pow(d - 1) };
             let upper_k = 10_i64.pow(d);
 
-            'k_loop: for k in lower_k..upper_k {
-                if k == 0 {
-                    continue;
-                }
-                let k_str = k.to_string();
-
-                for r in 2.. {
-                    let total_len = k_str.len() * r;
-                    if total_len > 19 {
+            // Early termination check: if the smallest k with r=2 already exceeds max_val
+            if lower_k != 0 {
+                let k_str = lower_k.to_string();
+                let s = k_str.repeat(2);
+                if let Ok(n) = s.parse::<i64>() {
+                    if n > max_val {
                         break;
                     }
-
-                    let s = k_str.repeat(r);
-                    let invalid_num: i64 = match s.parse() {
-                        Ok(n) => n,
-                        Err(_) => break,
-                    };
-
-                    if invalid_num > max_val {
-                        if k == lower_k && r == 2 {
-                            break 'd_loop;
-                        }
-
-                        if r == 2 {
-                            break 'k_loop;
-                        }
-
-                        break;
-                    }
-
-                    Self::try_add_invalid_num(invalid_num, data, &mut seen, &mut sum);
                 }
             }
+
+            // Parallelize the k loop using rayon
+            let valid_nums: Vec<i64> = (lower_k..upper_k)
+                .into_par_iter()
+                .filter(|&k| k != 0)
+                .flat_map(|k| {
+                    let k_str = k.to_string();
+                    let mut nums = Vec::new();
+
+                    for r in 2.. {
+                        let total_len = k_str.len() * r;
+                        if total_len > 19 {
+                            break;
+                        }
+
+                        let s = k_str.repeat(r);
+                        let invalid_num: i64 = match s.parse() {
+                            Ok(n) => n,
+                            Err(_) => break,
+                        };
+
+                        if invalid_num > max_val {
+                            break;
+                        }
+
+                        // Check if the number falls within any of the given ranges
+                        for &(start, end) in data {
+                            if invalid_num >= start && invalid_num <= end {
+                                nums.push(invalid_num);
+                                break;
+                            }
+                        }
+                    }
+                    nums
+                })
+                .collect();
+
+            all_valid_nums.extend(valid_nums);
         }
-        sum
+
+        // Remove duplicates using BTreeSet and sum
+        all_valid_nums
+            .into_iter()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .sum()
     }
 }
 
