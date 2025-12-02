@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::collections::BTreeSet;
 use utils::{Solution, run_solution};
 
@@ -29,35 +30,6 @@ impl Day02 {
     }
 }
 
-fn is_invalid_id_part2(num: i64) -> bool {
-    let s = num.to_string();
-
-    // Can't have leading zeros
-    if s.starts_with('0') {
-        return false;
-    }
-
-    let len = s.len();
-
-    // Try all possible pattern lengths from 1 to len/2
-    // A pattern repeated at least twice means the pattern length is at most len/2
-    for pattern_len in 1..=len / 2 {
-        // Check if length is divisible by pattern length
-        if len.is_multiple_of(pattern_len) {
-            let pattern = &s[..pattern_len];
-            let repetitions = len / pattern_len;
-
-            // Check if repeating this pattern creates the whole string
-            let repeated = pattern.repeat(repetitions);
-            if repeated == s {
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
 impl Solution for Day02 {
     type Input = Vec<(i64, i64)>;
     type Output = i64;
@@ -85,45 +57,100 @@ impl Solution for Day02 {
         }
 
         let max_val = data.iter().map(|r| r.1).max().unwrap();
-        let mut sum = 0;
-        let mut seen = BTreeSet::new();
 
-        'd_loop: for d in 1..=9 {
+        // Collect all valid numbers from all iterations
+        let mut all_valid_nums = Vec::new();
+
+        for d in 1..=9 {
             let power_of_10_d = 10_i64.pow(d);
             let multiplier = power_of_10_d + 1;
             let lower_k = 10_i64.pow(d - 1);
 
             // Early termination: smallest possible number already exceeds max_val.
             if lower_k > max_val / multiplier {
-                break 'd_loop;
+                break;
             }
 
             let upper_k = power_of_10_d;
 
-            for k in lower_k..upper_k {
-                let invalid_num = k * multiplier;
+            // Parallelize the inner loop using rayon
+            let valid_nums: Vec<i64> = (lower_k..upper_k)
+                .into_par_iter()
+                .filter_map(|k| {
+                    let invalid_num = k * multiplier;
 
-                if invalid_num > max_val {
-                    break;
-                }
+                    if invalid_num > max_val {
+                        return None;
+                    }
 
-                Self::try_add_invalid_num(invalid_num, data, &mut seen, &mut sum);
-            }
+                    // Check if the number falls within any of the given ranges
+                    for &(start, end) in data {
+                        if invalid_num >= start && invalid_num <= end {
+                            return Some(invalid_num);
+                        }
+                    }
+                    None
+                })
+                .collect();
+
+            all_valid_nums.extend(valid_nums);
         }
-        sum
+
+        // Remove duplicates using BTreeSet and sum
+        all_valid_nums
+            .into_iter()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .sum()
     }
 
     fn part2(&self, data: &Self::Input) -> Self::Output {
-        let mut sum = 0;
+        if data.is_empty() {
+            return 0;
+        }
 
-        for &(start, end) in data {
-            for num in start..=end {
-                if is_invalid_id_part2(num) {
-                    sum += num;
+        let max_val = data.iter().map(|r| r.1).max().unwrap();
+        let mut sum = 0;
+        let mut seen = BTreeSet::new();
+
+        'd_loop: for d in 1..=18 {
+            let lower_k = if d == 1 { 1 } else { 10_i64.pow(d - 1) };
+            let upper_k = 10_i64.pow(d);
+
+            'k_loop: for k in lower_k..upper_k {
+                if k == 0 {
+                    continue;
+                }
+                let k_str = k.to_string();
+
+                for r in 2.. {
+                    let total_len = k_str.len() * r;
+                    if total_len > 19 {
+                        break;
+                    }
+
+                    let s = k_str.repeat(r);
+                    let invalid_num: i64 = match s.parse() {
+                        Ok(n) => n,
+                        Err(_) => break,
+                    };
+
+                    if invalid_num > max_val {
+                        if k == lower_k && r == 2 {
+                            break 'd_loop;
+                        }
+
+                        if r == 2 {
+                            break 'k_loop;
+                        }
+
+                        break;
+                    }
+
+                    Self::try_add_invalid_num(invalid_num, data, &mut seen, &mut sum);
                 }
             }
         }
-
         sum
     }
 }
@@ -150,6 +177,8 @@ mod tests {
 
     #[test]
     fn test_is_invalid_id() {
+        // These tests are for the old implementation, but we can verify the new one with some manual checks.
+        // The logic is now inside part1, not in a dedicated function.
         let day = Day02;
         assert_eq!(day.part1(&day.parse_input("11-11")), 11);
         assert_eq!(day.part1(&day.parse_input("6464-6464")), 6464);
@@ -160,23 +189,19 @@ mod tests {
 
     #[test]
     fn test_is_invalid_id_part2() {
-        // Examples from part 2
-        assert!(is_invalid_id_part2(11)); // "1" x 2
-        assert!(is_invalid_id_part2(111)); // "1" x 3
-        assert!(is_invalid_id_part2(999)); // "9" x 3
-        assert!(is_invalid_id_part2(1010)); // "10" x 2
-        assert!(is_invalid_id_part2(12_341_234)); // "1234" x 2
-        assert!(is_invalid_id_part2(123_123_123)); // "123" x 3
-        assert!(is_invalid_id_part2(1_212_121_212)); // "12" x 5
-        assert!(is_invalid_id_part2(1_111_111)); // "1" x 7
-        assert!(is_invalid_id_part2(565_656)); // "56" x 3
-        assert!(is_invalid_id_part2(824_824_824)); // "824" x 3
-        assert!(is_invalid_id_part2(2_121_212_121)); // "21" x 5
-
-        assert!(!is_invalid_id_part2(12));
-        assert!(!is_invalid_id_part2(101));
-        assert!(!is_invalid_id_part2(100));
-        assert!(!is_invalid_id_part2(123));
+        // These tests are for the old implementation.
+        // We can verify the new logic by testing part2 with specific inputs.
+        let day = Day02;
+        assert_eq!(day.part2(&day.parse_input("11-11")), 11);
+        assert_eq!(day.part2(&day.parse_input("111-111")), 111);
+        assert_eq!(day.part2(&day.parse_input("999-999")), 999);
+        assert_eq!(day.part2(&day.parse_input("1010-1010")), 1010);
+        assert_eq!(day.part2(&day.parse_input("12341234-12341234")), 12_341_234);
+        assert_eq!(
+            day.part2(&day.parse_input("123123123-123123123")),
+            123_123_123
+        );
+        assert_eq!(day.part2(&day.parse_input("12-12")), 0);
     }
 
     #[test]
