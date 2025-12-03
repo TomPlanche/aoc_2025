@@ -55,9 +55,43 @@ Instead of checking all pairs, we can optimize:
 - Calculate joltage as digit[i] * 10 + max_digit_after_i
 - Track the maximum joltage
 
-### Part 2
+### Part 2: Maximum Twelve-Battery Joltage
 
-[Describe your approach to solving part 2]
+Now we need to select exactly 12 batteries from each bank to form the largest 12-digit number while maintaining their order.
+
+#### Algorithm: Greedy Selection
+
+This is a classic greedy algorithm problem. The key insight is that to maximize the resulting number, we want to pick the largest possible digit at each position from left to right, while ensuring we have enough remaining digits to complete our selection.
+
+##### Implementation
+
+For each position we need to fill (from left to right):
+1. Calculate the window of possible starting positions
+2. The window size ensures we can still pick the remaining digits after this choice
+3. Find the maximum digit in this window
+4. Pick the first occurrence of this maximum digit
+5. Continue from the position after the picked digit
+
+##### Mathematical Formula
+
+If we need to pick k digits from n digits:
+- At each step, when we've picked i digits (need k - i more), starting from position start
+- We can look in the window [start, n - (k - i) + 1)
+- This ensures we have at least (k - i) digits remaining after our choice
+
+##### Example Walkthrough
+
+For `818181911112111` (15 digits), picking 12:
+1. Window [0,4): pick 8 at position 0
+2. Window [1,5): pick 8 at position 2
+3. Window [3,6): pick 8 at position 4
+4. Window [5,7): pick 9 at position 6
+5. Take remaining 8 digits: 1,1,1,1,2,1,1,1
+6. Result: 888911112111
+
+##### Time Complexity
+
+O(n * k) where n is the length of each battery bank and k is the number of batteries to select (12 in this case).
 
 ## Running
 
@@ -73,4 +107,14 @@ cargo test
 
 ## Notes
 
-[Add any additional notes, observations, or learnings from this challenge]
+### Key Insights
+
+1. Part 1 is a straightforward brute-force approach - try all pairs and find the maximum
+2. Part 2 requires a greedy algorithm that's commonly known as "Remove K Digits" or "Maximum Number by Deleting Digits"
+3. The greedy choice property holds: selecting the maximum digit at each position (with proper window constraints) leads to the global optimum
+4. The window size calculation is critical: at each step, we must ensure enough digits remain to complete our selection
+
+### Results
+
+- Part 1: 17359
+- Part 2: 172787336861064
