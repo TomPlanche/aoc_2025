@@ -48,11 +48,15 @@ Result: 3 fresh ingredients
 
 The implementation uses `u64` to handle very large ingredient IDs (hundreds of trillions).
 
-Answer: 638
-
 ### Part 2
 
-To be implemented.
+Now we need to count ALL ingredient IDs that are considered fresh by the ranges, not just check specific IDs.
+
+1. Sort the ranges by start position
+2. Merge overlapping and adjacent ranges to avoid double-counting
+3. Sum the count of IDs in each merged range
+
+For example, ranges 10-14, 12-18, and 16-20 all overlap, so they merge into a single range 10-20 which contains 11 IDs.
 
 ## Running
 
