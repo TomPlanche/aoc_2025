@@ -87,7 +87,9 @@ fn count_fresh_ids(ranges: &[(u64, u64)]) -> usize {
     // Count total IDs in all merged ranges
     merged
         .iter()
-        .map(|&(start, end)| (end - start + 1) as usize)
+        .map(|&(start, end)| {
+            usize::try_from(end - start + 1).unwrap_or(usize::MAX)
+        })
         .sum()
 }
 
