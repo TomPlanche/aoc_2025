@@ -4,7 +4,8 @@ struct Day06;
 
 #[derive(Debug)]
 struct Problem {
-    numbers: Vec<i64>,
+    numbers_part1: Vec<i64>,
+    numbers_part2: Vec<i64>,
     operation: char,
 }
 
@@ -58,10 +59,11 @@ impl Solution for Day06 {
         let mut problems = Vec::new();
 
         for (col_start, col_end) in problem_ranges {
-            let mut numbers = Vec::new();
+            let mut numbers_part1 = Vec::new();
+            let mut numbers_part2 = Vec::new();
             let mut operation = ' ';
 
-            // Extract substring for each line in this column range
+            // Part 1: Extract substring for each line, each line is a number
             for (line_idx, line) in lines.iter().enumerate() {
                 let start_idx = col_start.min(line.len());
                 let end_idx = (col_end + 1).min(line.len());
@@ -80,16 +82,42 @@ impl Solution for Day06 {
                 // Last line contains the operation
                 if line_idx == lines.len() - 1 {
                     operation = trimmed.chars().next().unwrap_or(' ');
-                } else {
-                    // Try to parse as number
-                    if let Ok(num) = trimmed.parse::<i64>() {
-                        numbers.push(num);
+                } else if let Ok(num) = trimmed.parse::<i64>() {
+                    numbers_part1.push(num);
+                }
+            }
+
+            // Part 2: Each column forms a number by reading bottom-to-top
+            // (bottom = least significant digit)
+            for col_idx in col_start..=col_end {
+                let mut digits = Vec::new();
+
+                // Read from bottom to top (excluding last line which has operator)
+                for line_idx in (0..lines.len() - 1).rev() {
+                    if let Some(ch) = lines[line_idx].chars().nth(col_idx)
+                        && ch.is_ascii_digit()
+                    {
+                        digits.push(ch);
+                    }
+                }
+
+                if !digits.is_empty() {
+                    // Digits are already in bottom-to-top order (least to most significant)
+                    // Reverse to get most-to-least significant for parsing
+                    digits.reverse();
+                    let num_str: String = digits.iter().collect();
+                    if let Ok(num) = num_str.parse::<i64>() {
+                        numbers_part2.push(num);
                     }
                 }
             }
 
-            if !numbers.is_empty() && (operation == '+' || operation == '*') {
-                problems.push(Problem { numbers, operation });
+            if !numbers_part1.is_empty() && (operation == '+' || operation == '*') {
+                problems.push(Problem {
+                    numbers_part1,
+                    numbers_part2,
+                    operation,
+                });
             }
         }
 
@@ -99,8 +127,8 @@ impl Solution for Day06 {
     fn part1(&self, data: &Self::Input) -> Self::Output {
         data.iter()
             .map(|problem| {
-                let mut result = problem.numbers[0];
-                for &num in &problem.numbers[1..] {
+                let mut result = problem.numbers_part1[0];
+                for &num in &problem.numbers_part1[1..] {
                     match problem.operation {
                         '+' => result += num,
                         '*' => result *= num,
@@ -112,9 +140,20 @@ impl Solution for Day06 {
             .sum()
     }
 
-    fn part2(&self, _data: &Self::Input) -> Self::Output {
-        // TODO: Implement part 2
-        0
+    fn part2(&self, data: &Self::Input) -> Self::Output {
+        data.iter()
+            .map(|problem| {
+                let mut result = problem.numbers_part2[0];
+                for &num in &problem.numbers_part2[1..] {
+                    match problem.operation {
+                        '+' => result += num,
+                        '*' => result *= num,
+                        _ => {}
+                    }
+                }
+                result
+            })
+            .sum()
     }
 }
 
@@ -148,8 +187,14 @@ mod tests {
         let day = Day06;
         let parsed_input = day.parse_input(TEST_INPUT);
 
+        // Cephalopod math: reading columns bottom-to-top
+        // Rightmost: 4 + 431 + 623 = 1058
+        // Second from right: 175 * 581 * 32 = 3253600
+        // Third from right: 8 + 248 + 369 = 625
+        // Leftmost: 356 * 24 * 1 = 8544
+        // Total: 1058 + 3253600 + 625 + 8544 = 3263827
         let part2 = day.part2(&parsed_input);
 
-        assert_eq!(part2, 0);
+        assert_eq!(part2, 3_263_827);
     }
 }

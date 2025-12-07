@@ -42,7 +42,30 @@ The implementation uses `i64` to handle the large intermediate values that can o
 
 ### Part 2
 
-[Awaiting Part 2 instructions after completing Part 1]
+The big cephalopods explain that cephalopod math is written right-to-left in columns! Each vertical column of characters forms a single number, with digits read from bottom to top (bottom = least significant digit, top = most significant digit).
+
+Using the same example:
+```
+123 328  51 64
+ 45 64  387 23
+  6 98  215 314
+*   +   *   +
+```
+
+Reading columns bottom-to-top to form numbers:
+- Rightmost problem: 4 + 431 + 623 = 1058
+- Second from right: 175 * 581 * 32 = 3253600
+- Third from right: 8 + 248 + 369 = 625
+- Leftmost: 356 * 24 * 1 = 8544
+
+Grand total: 3263827
+
+The solution:
+1. For each problem column range, iterate through each character column
+2. Within each character column, read digits from bottom-to-top (excluding operator row)
+3. Bottom digit is the ones place, next up is tens, hundreds, etc.
+4. Form the number and apply the operation
+5. Sum all problem results
 
 ## Running
 
