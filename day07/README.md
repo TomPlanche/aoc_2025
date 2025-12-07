@@ -33,7 +33,28 @@ The implementation handles beam merging by skipping positions already seen, ensu
 
 ### Part 2
 
-[Awaiting Part 2 instructions after completing Part 1]
+The manifold is actually a QUANTUM tachyon manifold! A single tachyon particle takes BOTH the left and right path at each splitter, causing timelines to split (many-worlds interpretation).
+
+We need to count the total number of timelines after the particle completes all possible journeys through the manifold.
+
+Key differences from Part 1:
+- In Part 1, beams could merge (same position = same beam)
+- In Part 2, each unique path is a separate timeline, even if paths merge at the same position
+- Each splitter creates TWO timelines (one for left, one for right)
+- A timeline ends when:
+  - The particle exits the bottom of the manifold
+  - The particle tries to split but would go off the left or right edge
+
+Algorithm:
+1. Start with one particle at S
+2. Simulate all possible paths using BFS (no deduplication)
+3. When hitting a splitter:
+   - Create left path (if valid) or count as ended timeline (if at edge)
+   - Create right path (if valid) or count as ended timeline (if at edge)
+4. When a path reaches the bottom, count it as an ended timeline
+5. Sum all ended timelines
+
+The solution explores the full decision tree of all possible paths through the manifold.
 
 ## Running
 

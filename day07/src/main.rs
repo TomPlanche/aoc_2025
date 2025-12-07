@@ -1,5 +1,5 @@
+use std::collections::{HashMap, HashSet, VecDeque};
 use utils::{run_solution, Solution};
-use std::collections::{HashSet, VecDeque};
 
 struct Day07;
 
@@ -87,10 +87,61 @@ impl Solution for Day07 {
         split_count
     }
 
-    fn part2(&self, _data: &Self::Input) -> Self::Output {
-        // TODO: Implement part 2
-        0
+    fn part2(&self, data: &Self::Input) -> Self::Output {
+        // Use memoization to count timelines from each position
+        let mut memo: HashMap<(usize, usize), usize> = HashMap::new();
+        count_timelines_from(data.start.0, data.start.1, data, &mut memo)
     }
+}
+
+fn count_timelines_from(
+    row: usize,
+    col: usize,
+    data: &Manifold,
+    memo: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    // Check if we've already computed this
+    if let Some(&count) = memo.get(&(row, col)) {
+        return count;
+    }
+
+    // Move downward from current position
+    let mut current_row = row + 1;
+
+    // Continue moving down until we hit a splitter or exit the manifold
+    while current_row < data.height {
+        let ch = data.grid[current_row][col];
+
+        if ch == '^' {
+            // Hit a splitter - particle takes BOTH paths
+            let mut total = 0;
+
+            // Left path
+            if col > 0 {
+                total += count_timelines_from(current_row, col - 1, data, memo);
+            } else {
+                // Can't go left (at edge), this timeline ends
+                total += 1;
+            }
+
+            // Right path
+            if col + 1 < data.width {
+                total += count_timelines_from(current_row, col + 1, data, memo);
+            } else {
+                // Can't go right (at edge), this timeline ends
+                total += 1;
+            }
+
+            memo.insert((row, col), total);
+            return total;
+        }
+
+        current_row += 1;
+    }
+
+    // Exited the bottom - this is one timeline
+    memo.insert((row, col), 1);
+    1
 }
 
 fn main() {
@@ -133,8 +184,10 @@ mod tests {
         let day = Day07;
         let parsed_input = day.parse_input(TEST_INPUT);
 
+        // With quantum splitting, particle takes both paths at each splitter
+        // Total of 40 different timelines
         let part2 = day.part2(&parsed_input);
 
-        assert_eq!(part2, 0);
+        assert_eq!(part2, 40);
     }
 }
