@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use utils::{Point, Solution, run_solution};
 
 struct Day09;
@@ -109,33 +110,37 @@ impl Solution for Day09 {
         }
 
         // Find the largest rectangle that doesn't intersect any segment
-        let mut max_area = 0_i64;
+        // Parallelize the outer loop using rayon
+        let valid_areas: Vec<i64> = (0..data.len())
+            .into_par_iter()
+            .flat_map(|i| {
+                let mut areas = Vec::new();
+                for j in (i + 1)..data.len() {
+                    let p1 = data[i];
+                    let p2 = data[j];
 
-        for i in 0..data.len() {
-            for j in (i + 1)..data.len() {
-                let p1 = data[i];
-                let p2 = data[j];
+                    // Check if this rectangle intersects any polygon segment
+                    let mut intersects = false;
+                    for &seg in &segments {
+                        if Day09::segment_intersects_rect(seg, (p1, p2)) {
+                            intersects = true;
+                            break;
+                        }
+                    }
 
-                // Check if this rectangle intersects any polygon segment
-                let mut intersects = false;
-                for &seg in &segments {
-                    if Day09::segment_intersects_rect(seg, (p1, p2)) {
-                        intersects = true;
-                        break;
+                    if !intersects {
+                        let width = (p2.x - p1.x).abs() + 1;
+                        let height = (p2.y - p1.y).abs() + 1;
+                        let area = width * height;
+
+                        areas.push(area);
                     }
                 }
+                areas
+            })
+            .collect();
 
-                if !intersects {
-                    let width = (p2.x - p1.x).abs() + 1;
-                    let height = (p2.y - p1.y).abs() + 1;
-                    let area = width * height;
-
-                    max_area = max_area.max(area);
-                }
-            }
-        }
-
-        max_area
+        valid_areas.into_iter().max().unwrap_or(0)
     }
 }
 

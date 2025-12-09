@@ -88,6 +88,7 @@ dependencies = [
 name = "day09"
 version = "0.1.0"
 dependencies = [
+ "rayon",
  "utils",
 ]
 
