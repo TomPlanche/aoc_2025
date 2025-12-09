@@ -22,8 +22,6 @@ The solution uses a brute-force approach to check all possible pairs of red tile
 
 The key insight is that the area calculation must be inclusive of both corner tiles, hence the `+ 1` in both dimensions.
 
-Time Complexity: O(n²) where n is the number of red tiles
-
 ### Part 2
 
 [To be implemented after Part 1 submission]
