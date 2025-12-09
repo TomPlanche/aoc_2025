@@ -50,7 +50,30 @@ This is a classic minimum spanning tree problem solved using Kruskal's algorithm
 
 ### Part 2
 
-Not yet implemented.
+Part 2 extends the problem: continue connecting junction boxes until ALL boxes form a single circuit. The task is to find the LAST pair of junction boxes that gets connected (the connection that completes the circuit) and multiply their X coordinates.
+
+Algorithm:
+1. **Generate and Sort Edges**: Same as Part 1 - create all possible edges and sort by distance
+
+2. **Track Component Count**: Start with `n` components (each box is its own circuit)
+   - Decrement the counter each time `union()` successfully merges two different components
+
+3. **Find the Final Connection**: Iterate through sorted edges
+   - When `union()` returns `true`, a merge happened
+   - Check if components count reaches 1 (all boxes now connected)
+   - The edge that reduces components to 1 is the answer
+
+4. **Calculate Result**: Multiply the X coordinates of the two junction boxes in the final edge
+
+**Key Insight**: The Union-Find `union()` method returns:
+- `true` when merging two different components (a real connection)
+- `false` when both boxes are already in the same component (no-op)
+
+This allows us to track exactly when the final merge happens.
+
+**Example**: With 20 junction boxes:
+- The last connection needed is between boxes at (216,146,977) and (117,168,530)
+- Answer: 216 × 117 = 25,272
 
 ## Running
 
