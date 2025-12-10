@@ -190,7 +190,72 @@ The key insight is that this problem maps perfectly to solving a system of linea
 
 ### Part 2
 
-To be implemented after Part 1 submission.
+Part 2 switches from binary light toggling to integer counter incrementing. Now the machines have joltage counters (all starting at 0) that need to reach specific target values.
+
+**Key difference from Part 1:**
+- Part 1: Buttons toggle lights (binary, GF(2) arithmetic, press 0 or 1 times)
+- Part 2: Buttons increment counters (integers, normal arithmetic, press 0, 1, 2, ... times)
+
+**Problem formulation:**
+
+For the same example machine: `[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}`
+
+- Ignoring the lights, focus on joltage: `{3,5,4,7}` = 4 counters with targets [3, 5, 4, 7]
+- Same buttons: (3), (1,3), (2), (2,3), (0,2), (0,1)
+- Now each button press increments the specified counters by 1
+
+**System of linear equations (over integers Z+):**
+```
+Counter 0: b4 + b5 = 3           (button 4 and 5 affect counter 0)
+Counter 1: b1 + b5 = 5           (button 1 and 5 affect counter 1)
+Counter 2: b2 + b3 + b4 = 4      (buttons 2, 3, 4 affect counter 2)
+Counter 3: b0 + b1 + b3 = 7      (buttons 0, 1, 3 affect counter 3)
+```
+
+Where b_i = number of times we press button i (must be >= 0)
+
+**Goal:** Minimize b0 + b1 + b2 + b3 + b4 + b5 (total button presses)
+
+**Solution for this machine: 10 presses**
+- Press button 0: 1 time
+- Press button 1: 3 times
+- Press button 2: 0 times
+- Press button 3: 3 times
+- Press button 4: 1 time
+- Press button 5: 2 times
+- Total: 1+3+0+3+1+2 = 10
+
+**Algorithm:**
+
+This is an Integer Linear Programming (ILP) problem:
+
+1. **Set up the system:** Build matrix `Ax = b` where entries are integers, not binary
+   - A[i][j] = 1 if button j affects counter i, else 0
+   - b[i] = target value for counter i
+   - x[j] = number of times to press button j (unknown, must be >= 0)
+
+2. **Gaussian elimination over integers:**
+   - Similar to Part 1 but using integer arithmetic instead of XOR
+   - For elimination: `row[i] = row[i] * pivot_val - factor * pivot_row`
+   - This keeps all values as integers
+
+3. **Find minimum L1-norm solution:**
+   - If no free variables: directly solve for unique solution
+   - If free variables exist: exhaustive search over reasonable bounds
+   - For each free variable assignment, compute pivot variables
+   - Only accept solutions where all variables >= 0
+   - Return the solution with minimum sum
+
+4. **Optimization:**
+   - Bound free variable search by max target value
+   - Prune search when current partial sum exceeds best found solution
+   - This keeps the search tractable even with multiple free variables
+
+**Complexity:**
+- Part 1: O(n³ + 2^f × n) where f = free variables (binary search)
+- Part 2: O(n³ + T^f × n) where T = max target value (integer search)
+
+Part 2 is slower because the search space for free variables is larger (0 to T instead of just 0 or 1).
 
 ## Running
 
@@ -209,9 +274,28 @@ cargo test
 
 ## Notes
 
-The solution uses a combination of:
-- Gaussian elimination for solving the linear system
-- Exhaustive search over free variables for optimization
-- Efficient bit manipulation for GF(2) arithmetic (XOR operations)
+For the first time of this AOC,I resorted to Claude based on my linear calculous algorithms for implementing the `search_free_variables`, `solve_integer_linear_min` and `gaussian_elimination_gf2_min_weight` functions from articles I found and my initial approach to the problem.
+I usually use Claude to write the documentation based on my code but this was the first time I used it to implement a solution from my thoughts and articles I found.
 
-For machines with many free variables, the exponential search could theoretically be slow, but in practice AOC inputs are constrained enough that this approach works efficiently.
+The solution uses two different algorithms for the two parts:
+
+**Part 1 (Binary toggles, GF(2)):**
+- Gaussian elimination with XOR operations
+- Exhaustive search over 2^f combinations (f = free variables)
+- Very fast: ~7.7ms for the full input
+
+**Part 2 (Integer increments, Z+):**
+- Gaussian elimination with integer arithmetic
+- Exhaustive search over bounded integer ranges for free variables
+- Slower: ~753ms for the full input, but still reasonable
+
+**Why two separate algorithms?**
+- GF(2) is fundamentally different from regular integer arithmetic
+- Part 1 can use bit operations (XOR) which are extremely fast
+- Part 2 requires integer division and larger search spaces
+- Could not simply reuse Part 1's algorithm for Part 2
+
+**Interesting observation:**
+Both parts use the same matrix structure (which buttons affect which lights/counters), but solve different algebraic structures:
+- Part 1: Finite field GF(2)
+- Part 2: Non-negative integers Z+ with L1-norm minimization
