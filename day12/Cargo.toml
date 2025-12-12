@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 utils = { workspace = true }
+rayon = "1.10"
